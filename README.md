@@ -33,7 +33,7 @@ After the 30 second camera flight, the user is free to move the camera and escap
 Technical Effect Proposal 2: One other dramatic element we will add, or periodically switch off and on, is a particle system for a weather phenomenon. This will most likely be rain, but as it is a dream sequence, we would like to experiment with the actual precipitation - the type and amount of particles - and also try to create a rain of fireballs or similar objects. If we manage to do so, the amount of particles should also depend on the movements of the masks, to give the impression that they are performing some kind of rain dance. (20P.)
 
 
-![Sketch](/IMG_2074 copy.jpg)
+![Sketch](https://github.com/jku-icg-classroom/cg-lab-2021-project-dreamscaperzzz/blob/master/IMG_2074%20copy.jpg?raw=true)
 
 (Explain the basic story of your movie, i.e., planned scenes, what happens, which objects are used, etc.)
 
