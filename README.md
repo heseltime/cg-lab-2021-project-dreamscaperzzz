@@ -11,18 +11,29 @@ For every submission change/extend the corresponding sections by replacing the *
 
 ### Movie Name
 
-TODO
+Dreamscape(rzzz)
 
 ### Group Members
 
-|               | Student ID    | First Name  | Last Name      | E-Mail         |
-|---------------|---------------|-------------|----------------|----------------|
-| **Student 1** | TODO          | TODO        | TODO           | TODO           |
-| **Student 2** | TODO          | TODO        | TODO           | TODO           |
+|                  | Student ID    | First Name  | Last Name      | E-Mail                    |
+|------------------|---------------|-------------|----------------|---------------------------|
+| Gartner, Mathias | 1156113       | Mathias     | Gartner        | mathiasgartner@gmx.at     |
+| Heseltine, Jack  | 01409574      | Jack        | Heseltine      | k01409574@students.jku.at |
 
 ### Concept Submission due on 26.03.2021
 
-TODO
+The Dreamscape is a world filled with about 10 - 20 disembodied, floating masks, that haunt you, or the scene's camera, by staring after you. The masks are moving and will encircle the camera. At some time in the movie, new masks will fly in from far away and join the already moving masks in their dance.
+
+Technical Effect Proposal 1: This is the Billboarding effect, EXCEPT that a float surface is replaced by a semi-flat, low-poly "face" with an orthogonal vector originating from the midpoint between the mask's eyes and pointing at the camera. (10P.)
+
+The story is an inspection of these various masks, revealing the Billboarding effect dramatically, via clever camera routing through the space. The final plot point is a reveal that the masks themselves are moving, in fact converging in parallel, towards the camera.
+
+After the 30 second camera flight, the user is free to move the camera and escape the masks or take another look at the masks that interested him. The faces in the masks are a collection of bland, generic faces, public figures (Madame-Toussaud's-style), and even animal and totem masks (without wishing to delve into stereotypical/racist representations). These are execution-dependent and the minimum number we would like to agree on now is 10 masks, with the goal to create more for a more detailed and interesting scene.
+
+Technical Effect Proposal 2: One other dramatic element we will add, or periodically switch off and on, is a particle system for a weather phenomenon. This will most likely be rain, but as it is a dream sequence, we would like to experiment with the actual precipitation - the type and amount of particles - and also try to create a rain of fireballs or similar objects. If we manage to do so, the amount of particles should also depend on the movements of the masks, to give the impression that they are performing some kind of rain dance. (20P.)
+
+
+![Sketch](https://github.com/jku-icg-classroom/cg-lab-2021-project-dreamscaperzzz/blob/master/IMG_2074%20copy.jpg?raw=true)
 
 (Explain the basic story of your movie, i.e., planned scenes, what happens, which objects are used, etc.)
 
@@ -32,16 +43,16 @@ Selected special effects must add up to exactly 30 points. Replace yes/no with e
 
 | Selected   | ID | Name                                  | Points |
 |------------|----|---------------------------------------|--------|
-| yes/no     | S1 | Multi texturing                       | 10     |  
-| yes/no     | S2 | Level of detail                       | 10     |
-| yes/no     | S3 | Billboarding                          | 10     |
-| yes/no     | S4 | Terrain from heightmap                | 20     |
-| yes/no     | S5 | Postprocessing shader                 | 20     |
-| yes/no     | S6 | Animated water surface                | 20     |
-| yes/no     | S7 | Minimap                               | 20     |
-| yes/no     | S8 | Particle system (rain, smoke, fire)   | 20     |
-| yes/no     | S9 | Motion blur                           | 30     |
-| yes/no     | SO | Own suggestion (preapproved by email) | TODO   |
+|     no     | S1 | Multi texturing                       | 10     |  
+|     no     | S2 | Level of detail                       | 10     |
+| yes        | S3 | Billboarding                          | 10     |
+|     no     | S4 | Terrain from heightmap                | 20     |
+|     no     | S5 | Postprocessing shader                 | 20     |
+|     no     | S6 | Animated water surface                | 20     |
+|     no     | S7 | Minimap                               | 20     |
+| yes        | S8 | Particle system (rain, smoke, fire)   | 20     |
+|     no     | S9 | Motion blur                           | 30     |
+|     no     | SO | Own suggestion (preapproved by email) | TODO   |
 
 ## Intermediate Submission due on 23.04.2021
 
