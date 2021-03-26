@@ -24,7 +24,7 @@ Dreamscape(rzzz)
 
 The Dreamscape is an world filled with ca 10 - 20 disembodied, floating masks, that haunt you, or the scene's camera, by staring after you.
 
-Technical Effect Proposal 1: This is the Billboarding effect, EXCEPT that a float surface is replaced by a semi-flat, low-poly "face" with an orthogonal vector pointing at the camera. (10P.)
+Technical Effect Proposal 1: This is the Billboarding effect, EXCEPT that a float surface is replaced by a semi-flat, low-poly "face" with an orthogonal vector originating from the midpoint between the mask's eyes and pointing at the camera. (10P.)
 
 The story is an inspection of these various masks, revealing the Billboarding effect dramatically, via clever camera routing through the space. The final plot point is a reveal that the masks themselves are moving, in fact converging in parallel, towards the camera.
 
