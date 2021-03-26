@@ -28,7 +28,7 @@ Technical Effect Proposal 1: This is the Billboarding effect, EXCEPT that a floa
 
 The story is an inspection of these various masks, revealing the Billboarding effect dramatically, via clever camera routing through the space. The final plot point is a reveal that the masks themselves are moving, in fact converging in parallel, towards the camera.
 
-After the 30 second camera flight, the user is free to move the camera and escape the masks or take another look at the masks that interested him. The faces in the masks are a collection of bland, generic faces, public figures (Madame-Toussaud's-style), and even animal and totem masks (without wishing to delve into stereotypical/racist representations). These are execution dependent and the minimum number we would like to agree on now is 10 masks, with the goal to create more for a more detailed and interesting scene.
+After the 30 second camera flight, the user is free to move the camera and escape the masks or take another look at the masks that interested him. The faces in the masks are a collection of bland, generic faces, public figures (Madame-Toussaud's-style), and even animal and totem masks (without wishing to delve into stereotypical/racist representations). These are execution-dependent and the minimum number we would like to agree on now is 10 masks, with the goal to create more for a more detailed and interesting scene.
 
 Technical Effect Proposal 2: One other dramatic element we will add, or periodically switch off and on, is a particle system for a weather phenomenon. This will most likely be rain, but as it is a dream sequence, we would like to leave the actual precipitation, i.e. particles, execution-dependent. (20P.)
 
