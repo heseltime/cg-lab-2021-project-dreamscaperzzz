@@ -17,12 +17,12 @@ Dreamscape(rzzz)
 
 |                  | Student ID    | First Name  | Last Name      | E-Mail                    |
 |------------------|---------------|-------------|----------------|---------------------------|
-| Gartner, Mathias | TODO          | Mathias     | Gartner        | TODO                      |
+| Gartner, Mathias | 1156113       | Mathias     | Gartner        | mathiasgartner@gmx.at     |
 | Heseltine, Jack  | 01409574      | Jack        | Heseltine      | k01409574@students.jku.at |
 
 ### Concept Submission due on 26.03.2021
 
-The Dreamscape is an world filled with ca 10 - 20 disembodied, floating masks, that haunt you, or the scene's camera, by staring after you.
+The Dreamscape is a world filled with about 10 - 20 disembodied, floating masks, that haunt you, or the scene's camera, by staring after you. The masks are moving and will encircle the camera. At some time in the movie, new masks will fly in from far away and join the already moving masks in their dance.
 
 Technical Effect Proposal 1: This is the Billboarding effect, EXCEPT that a float surface is replaced by a semi-flat, low-poly "face" with an orthogonal vector originating from the midpoint between the mask's eyes and pointing at the camera. (10P.)
 
@@ -30,7 +30,7 @@ The story is an inspection of these various masks, revealing the Billboarding ef
 
 After the 30 second camera flight, the user is free to move the camera and escape the masks or take another look at the masks that interested him. The faces in the masks are a collection of bland, generic faces, public figures (Madame-Toussaud's-style), and even animal and totem masks (without wishing to delve into stereotypical/racist representations). These are execution-dependent and the minimum number we would like to agree on now is 10 masks, with the goal to create more for a more detailed and interesting scene.
 
-Technical Effect Proposal 2: One other dramatic element we will add, or periodically switch off and on, is a particle system for a weather phenomenon. This will most likely be rain, but as it is a dream sequence, we would like to leave the actual precipitation, i.e. particles, execution-dependent. (20P.)
+Technical Effect Proposal 2: One other dramatic element we will add, or periodically switch off and on, is a particle system for a weather phenomenon. This will most likely be rain, but as it is a dream sequence, we would like to experiment with the actual precipitation - the type and amount of particles - and also try to create a rain of fireballs or similar objects. If we manage to do so, the amount of particles should also depend on the movements of the masks, to give the impression that they are performing some kind of rain dance. (20P.)
 
 (Explain the basic story of your movie, i.e., planned scenes, what happens, which objects are used, etc.)
 
