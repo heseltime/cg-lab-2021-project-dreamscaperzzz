@@ -51,7 +51,9 @@ function init(resources) {
   cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
   cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
   cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
-  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 10*defaultDuration});
+  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 15*defaultDuration});
+  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
+  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3, -30)), duration: defaultDuration});
   cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
   cameraAnimation = new Animation(camera, cameraMats, false);
   cameraAnimation.start()
