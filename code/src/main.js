@@ -36,17 +36,28 @@ function init(resources) {
   gl = createContext();
 
   //setup camera
-  cameraStartPos = vec3.fromValues(0, 1, -10);
-  camera = new UserControlledCamera(gl.canvas, cameraStartPos);
+  cameraStartPos = vec3.fromValues(0, 0, 0);
+  cameraEndAnimationPos = vec3.fromValues(0, 1, -20);
+  camera = new UserControlledCamera(gl.canvas, cameraEndAnimationPos);
   //setup an animation for the camera, moving it into position
-  cameraAnimation = new Animation(camera, 
-            [{matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 1, -10)), duration: 5000}], 
-            false);
+  defaultDuration = 1000;
+  cameraMats = [];
+  cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
+  maskAngleUp = -10;
+  maskAngleLeft = 10;
+  maskAngleRight = -10;
+  cameraMats.push({matrix: cameraMatStart, duration: 1});
+  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
+  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
+  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
+  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
+  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 10*defaultDuration});
+  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
+  cameraAnimation = new Animation(camera, cameraMats, false);
   cameraAnimation.start()
   //TODO create your own scenegraph
   root = createSceneGraph(gl, resources);
 }
-
 
 function createSceneGraph(gl, resources) {
   //create scenegraph
@@ -83,7 +94,17 @@ function createSceneGraph(gl, resources) {
     c3po
   ]);
   // add C3PO to scenegraph
-  root.append(transformNode);
+  //root.append(transformNode);
+
+  //add c3pos in circle to act as dummy masks
+  c3poNum = 20;
+  for (i = 0; i < c3poNum; i++) {
+    let transformNode = new TransformationSGNode(mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.create(), glm.deg2rad(360/c3poNum*i+90)), vec3.fromValues(10, -0.5, 0)), [
+      c3po
+    ]);
+    // add C3PO to scenegraph
+    root.append(transformNode);
+  }
 
   // create floor
   let floor = new MaterialSGNode([
