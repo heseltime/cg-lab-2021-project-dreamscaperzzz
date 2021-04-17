@@ -12,6 +12,10 @@ var cameraAnimation = null;
 // scenegraph root node
 var root = null;
 
+//mask circle
+var maskCircleTM = mat4.create();
+var maskCircleAnimation;
+
 // time in last render step
 var previousTime = 0;
 
@@ -36,25 +40,26 @@ function init(resources) {
   gl = createContext();
 
   //setup camera
-  cameraStartPos = vec3.fromValues(0, 0, 0);
-  cameraEndAnimationPos = vec3.fromValues(0, 1, -20);
+  cameraStartPos = vec3.fromValues(0, 1, 0);
+  cameraEndAnimationPos = vec3.fromValues(0, 8, -80);
   camera = new UserControlledCamera(gl.canvas, cameraEndAnimationPos);
+  camera.control.lookingDir.y = -5;
   //setup an animation for the camera, moving it into position
-  defaultDuration = 1000;
-  cameraMats = [];
-  cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
-  maskAngleUp = -10;
-  maskAngleLeft = 10;
-  maskAngleRight = -10;
+  let cameraMats = [];
+  let cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
+  let cameraMatEnd = mat4.translate(mat4.create(), mat4.rotateX(mat4.create(), mat4.create(), glm.deg2rad(30)), cameraEndAnimationPos);
+  let maskAngleUp = -10;
+  let maskAngleLeft = 10;
+  let maskAngleRight = -10;
   cameraMats.push({matrix: cameraMatStart, duration: 1});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
-  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
-  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
-  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 15*defaultDuration});
-  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
-  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3, -30)), duration: defaultDuration});
-  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
+  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: 1000});
+  cameraMats.push({matrix: cameraMatStart, duration: 1000});
+  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: 1000});
+  cameraMats.push({matrix: cameraMatStart, duration: 1000});
+  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 5000}),
+  //cameraMats.push({matrix: glm.transform({ translate: [0, 3, -25] }), duration: 1000});
+  cameraMats.push({matrix: cameraMatEnd, duration: 5000});
+  cameraMats.forEach(p => p.duration *= 0.5);
   cameraAnimation = new Animation(camera, cameraMats, false);
   cameraAnimation.start()
   //TODO create your own scenegraph
@@ -77,11 +82,25 @@ function createSceneGraph(gl, resources) {
   light.ambient = [.5, .5, .5, 1];
   light.diffuse = [1, 1, 1, 1];
   light.specular = [1, 1, 1, 1];
-  light.position = [0, 2, 2];
+  light.position = [0, 10, 0];
   light.append(createLightSphere(resources));
   // add light to scenegraph
   root.append(light);
 
+
+  let maskCircle = new SGNode();
+  root.append(maskCircle);
+  
+  maskCircleTM = mat4.create();
+  let maskCircleTransformation = new TransformationSGNode(maskCircleTM);
+  maskCircle.append(maskCircleTransformation);
+  
+  let maskCircleAnimationMat = [
+    { matrix: mat4.create(), duration: 5000 },
+    { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
+  ];
+  maskCircleAnimation = new Animation(maskCircleTransformation, maskCircleAnimationMat, false);
+  maskCircleAnimation.start();
 
   // create C3PO
   let c3po = new MaterialSGNode([
@@ -92,22 +111,18 @@ function createSceneGraph(gl, resources) {
   c3po.diffuse = [0.75164, 0.60648, 0.22648, 1];
   c3po.specular = [0.628281, 0.555802, 0.366065, 1];
   c3po.shininess = 50;
-  let transformNode = new TransformationSGNode(glm.translate(0, -1.5, 0), [
-    c3po
-  ]);
-  // add C3PO to scenegraph
-  //root.append(transformNode);
-
   //add c3pos in circle to act as dummy masks
-  c3poNum = 20;
+  c3poNum = 15;
   for (i = 0; i < c3poNum; i++) {
-    let transformNode = new TransformationSGNode(mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.create(), glm.deg2rad(360/c3poNum*i+90)), vec3.fromValues(10, -0.5, 0)), [
+    let angle = 2.0 * Math.PI * i / c3poNum;
+    let distanceFromCenter = 15;
+    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 0, distanceFromCenter*Math.cos(angle)], rotateY: 360/c3poNum*i+180 }), [
       c3po
     ]);
     // add C3PO to scenegraph
-    root.append(transformNode);
+    maskCircleTransformation.append(transformNode);
   }
-
+  
   // create floor
   let floor = new MaterialSGNode([
     new RenderSGNode(makeRect(2, 2))
@@ -118,9 +133,12 @@ function createSceneGraph(gl, resources) {
   floor.specular = [0.5, 0.5, 0.5, 1];
   floor.shininess = 3;
   // add floor to scenegraph
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5, 0], rotateX: -90, scale: 3 }), [
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, 0, 0], rotateX: -90, scale: 10 }), [
     floor
   ]));
+
+
+
 
   return root;
 }
@@ -159,6 +177,7 @@ function render(timeInMilliseconds) {
   }
 
   //TODO use your own scene for rendering
+  maskCircleAnimation.update(deltaTime);
 
   //Apply camera
   camera.render(context);
