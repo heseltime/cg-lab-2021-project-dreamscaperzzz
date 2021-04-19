@@ -104,6 +104,19 @@ function createSceneGraph(gl, resources) {
   // add light to scenegraph
   root.append(light);
 
+  // JH1 mask test
+  let mask = new MaterialSGNode([
+    new RenderSGNode(makeMask())
+  ]);
+
+  mask.ambient = [0.2, 0.2, 0.2, 1];
+  mask.diffuse = [0.1, 0.1, 0.1, 1];
+  mask.specular = [0.5, 0.5, 0.5, 1];
+  mask.shininess = 3;
+
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5, 0], rotateX: -90, scale: 3 }), [
+    mask
+  ]));
 
   let maskCircle = new SGNode();
   root.append(maskCircle);
@@ -222,4 +235,144 @@ function createSingleMaskAnimation() {
     animation.currentSegment = steps[0];
     animation.start();
   }
+}
+
+/**
+ * JH1: mask fn, low poly intermediate submission selfmade obj CUBE DRAFT!
+ */
+
+var maskVertices = new Float32Array(positions = [
+  // Front face
+  -1.0, -1.0,  1.0,
+   1.0, -1.0,  1.0,
+   1.0,  1.0,  1.0,
+  -1.0,  1.0,  1.0,
+
+  // Back face
+  -1.0, -1.0, -1.0,
+  -1.0,  1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0, -1.0, -1.0,
+
+  // Top face
+  -1.0,  1.0, -1.0,
+  -1.0,  1.0,  1.0,
+   1.0,  1.0,  1.0,
+   1.0,  1.0, -1.0,
+
+  // Bottom face
+  -1.0, -1.0, -1.0,
+   1.0, -1.0, -1.0,
+   1.0, -1.0,  1.0,
+  -1.0, -1.0,  1.0,
+
+  // Right face
+   1.0, -1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0,  1.0,  1.0,
+   1.0, -1.0,  1.0,
+
+  // Left face
+  -1.0, -1.0, -1.0,
+  -1.0, -1.0,  1.0,
+  -1.0,  1.0,  1.0,
+  -1.0,  1.0, -1.0,
+]);
+
+var maskNormals = new Float32Array([
+  // Front
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+
+  // Back
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+
+  // Top
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+
+  // Bottom
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+
+  // Right
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+
+  // Left
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0
+]);
+
+var maskTextures = new Float32Array([
+  // Front
+   0.0,  0.0,  0.0,
+   0.0,  0.0,  0.0,
+   0.0,  0.0,  0.0,
+   0.0,  0.0,  0.0,
+
+  // Back
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+
+  // Top
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+
+  // Bottom
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+
+  // Right
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+
+  // Left
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+  0.0,  0.0,  0.0,
+]);
+
+var maskIndices =  new Float32Array([
+  0,  1,  2,      0,  2,  3,    // front
+  4,  5,  6,      4,  6,  7,    // back
+  8,  9,  10,     8,  10, 11,   // top
+  12, 13, 14,     12, 14, 15,   // bottom
+  16, 17, 18,     16, 18, 19,   // right
+  20, 21, 22,     20, 22, 23,   // left
+]);
+
+ function makeMask() {
+  var position = maskVertices;
+  var normal = maskNormals;
+  var texture = maskTextures;
+  var index = maskIndices;
+  return {
+    position: position,
+    normal: normal,
+    texture: texture,
+    index: index
+  };
 }
