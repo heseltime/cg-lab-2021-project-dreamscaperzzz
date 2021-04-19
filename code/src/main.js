@@ -114,7 +114,7 @@ function createSceneGraph(gl, resources) {
   mask.specular = [0.5, 0.5, 0.5, 1];
   mask.shininess = 3;
 
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5, 0], rotateX: -90, scale: 3 }), [
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, 1.5, 0], rotateX: -90, scale: 1 }), [
     mask
   ]));
 
