@@ -2,8 +2,9 @@
 var gl = null,
   program = null;
 
-
 //Camera
+var cameraAutostartEnabled = true;
+var animationSpeedupFactor = 1.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
@@ -40,30 +41,42 @@ function init(resources) {
   gl = createContext();
 
   //setup camera
-  cameraStartPos = vec3.fromValues(0, 1, 0);
-  cameraEndAnimationPos = vec3.fromValues(0, 8, -80);
-  camera = new UserControlledCamera(gl.canvas, cameraEndAnimationPos);
-  camera.control.lookingDir.y = -5;
+  let cameraDefaultPos = vec3.fromValues(0, 1, -50);
+  camera = new UserControlledCamera(gl.canvas, cameraDefaultPos);
   //setup an animation for the camera, moving it into position
-  let cameraMats = [];
-  let cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
-  let cameraMatEnd = mat4.translate(mat4.create(), mat4.rotateX(mat4.create(), mat4.create(), glm.deg2rad(30)), cameraEndAnimationPos);
-  let maskAngleUp = -10;
-  let maskAngleLeft = 10;
-  let maskAngleRight = -10;
-  cameraMats.push({matrix: cameraMatStart, duration: 1});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: 1000});
-  cameraMats.push({matrix: cameraMatStart, duration: 1000});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: 1000});
-  cameraMats.push({matrix: cameraMatStart, duration: 1000});
-  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 5000}),
-  //cameraMats.push({matrix: glm.transform({ translate: [0, 3, -25] }), duration: 1000});
-  cameraMats.push({matrix: cameraMatEnd, duration: 5000});
-  cameraMats.forEach(p => p.duration *= 0.5);
-  cameraAnimation = new Animation(camera, cameraMats, false);
-  cameraAnimation.start()
+  cameraAnimation = createCameraAnimation(camera, false, cameraDefaultPos);  
+  if (cameraAutostartEnabled) {
+    cameraAnimation.start()
+  }
+
   //TODO create your own scenegraph
   root = createSceneGraph(gl, resources);
+}
+
+function createCameraAnimation(camera, doLooping, lastStepPos) {
+  let steps = [];
+  let maskAngleUp = -10;
+  let maskAngleLeft = 15;
+  let maskAngleRight = -15;
+  let maskFocusDuration = 1500;
+  let maskLookaroundDuration = 6000;
+
+  let startMatrix = mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 0, 0));
+
+  steps.push({matrix: startMatrix, duration: 1});
+  steps.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: maskFocusDuration});    
+  steps.push({matrix: startMatrix, duration: maskFocusDuration});
+  steps.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: maskFocusDuration});
+  steps.push({matrix: startMatrix, duration: maskFocusDuration});
+  steps.push({matrix: p => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(180*(1-Math.cos(p*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(p*Math.PI))), duration: maskLookaroundDuration});
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 10, -50)), duration: 2000});
+  steps.push({matrix: p => mat4.translate(mat4.create(),  mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360 * p)), vec3.fromValues(0, 10, -50)), duration: 2000});
+
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), lastStepPos), duration: 1000});
+  steps.forEach(p => p.duration *= animationSpeedupFactor);
+  
+  let cameraAnimation = new Animation(camera, steps, doLooping);
+  return cameraAnimation;
 }
 
 function createSceneGraph(gl, resources) {
@@ -96,9 +109,10 @@ function createSceneGraph(gl, resources) {
   maskCircle.append(maskCircleTransformation);
   
   let maskCircleAnimationMat = [
-    { matrix: mat4.create(), duration: 5000 },
+    { matrix: mat4.create(), duration: 13000 },
     { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
   ];
+  maskCircleAnimationMat.forEach(p => p.duration *= animationSpeedupFactor);
   maskCircleAnimation = new Animation(maskCircleTransformation, maskCircleAnimationMat, false);
   maskCircleAnimation.start();
 
@@ -116,7 +130,7 @@ function createSceneGraph(gl, resources) {
   for (i = 0; i < c3poNum; i++) {
     let angle = 2.0 * Math.PI * i / c3poNum;
     let distanceFromCenter = 15;
-    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 0, distanceFromCenter*Math.cos(angle)], rotateY: 360/c3poNum*i+180 }), [
+    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/c3poNum*i+180 }), [
       c3po
     ]);
     // add C3PO to scenegraph
@@ -133,12 +147,9 @@ function createSceneGraph(gl, resources) {
   floor.specular = [0.5, 0.5, 0.5, 1];
   floor.shininess = 3;
   // add floor to scenegraph
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, 0, 0], rotateX: -90, scale: 10 }), [
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, -0.1, 0], rotateX: -90, scale: 10 }), [
     floor
   ]));
-
-
-
 
   return root;
 }
