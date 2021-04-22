@@ -40,7 +40,7 @@ function init(resources) {
   cameraEndAnimationPos = vec3.fromValues(0, 1, -20);
   camera = new UserControlledCamera(gl.canvas, cameraEndAnimationPos);
   //setup an animation for the camera, moving it into position
-  defaultDuration = 1000;
+  defaultDuration = 1000; 
   cameraMats = [];
   cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
   maskAngleUp = -10;
@@ -107,7 +107,7 @@ function createSceneGraph(gl, resources) {
     c3po
   ]);
   // add C3PO to scenegraph
-  root.append(transformNode);
+  //root.append(transformNode);
 
   //add c3pos in circle to act as dummy masks
   c3poNum = 20;
@@ -182,33 +182,34 @@ function render(timeInMilliseconds) {
 }
 
 /**
- * JH1: mask fn, low poly intermediate submission selfmade obj CUBE DRAFT!
+ * JH1: hand-crafted mask testing from cube example
  */
 
+// half cube vars
 var maskVertices = new Float32Array(positions = [
   // Front face
-  -1.0, -1.0,  1.0,
+   0.0, -1.0,  1.0,
    1.0, -1.0,  1.0,
    1.0,  1.0,  1.0,
-  -1.0,  1.0,  1.0,
+   0.0,  1.0,  1.0,
 
   // Back face
-  -1.0, -1.0, -1.0,
-  -1.0,  1.0, -1.0,
+   0.0, -1.0, -1.0,
+   0.0,  1.0, -1.0,
    1.0,  1.0, -1.0,
    1.0, -1.0, -1.0,
 
   // Top face
-  -1.0,  1.0, -1.0,
-  -1.0,  1.0,  1.0,
+   0.0,  1.0, -1.0,
+   0.0,  1.0,  1.0,
    1.0,  1.0,  1.0,
    1.0,  1.0, -1.0,
 
   // Bottom face
-  -1.0, -1.0, -1.0,
+   0.0, -1.0, -1.0,
    1.0, -1.0, -1.0,
    1.0, -1.0,  1.0,
-  -1.0, -1.0,  1.0,
+   0.0, -1.0,  1.0,
 
   // Right face
    1.0, -1.0, -1.0,
@@ -217,10 +218,10 @@ var maskVertices = new Float32Array(positions = [
    1.0, -1.0,  1.0,
 
   // Left face
-  -1.0, -1.0, -1.0,
-  -1.0, -1.0,  1.0,
-  -1.0,  1.0,  1.0,
-  -1.0,  1.0, -1.0,
+   0.0, -1.0, -1.0,
+   0.0, -1.0,  1.0,
+   0.0,  1.0,  1.0,
+   0.0,  1.0, -1.0,
 ]);
 
 var maskNormals = new Float32Array([
@@ -308,7 +309,233 @@ var maskIndices =  new Float32Array([
   20, 21, 22,     20, 22, 23,   // left
 ]);
 
- function makeMask() {
+// ------------------------------------------
+// JH1: HANDCRAFTED OBJ (SYMMETRICAL MASK
+//      w/ ca 80 V each)
+//
+// mask in half cube (normalized) space
+// vertices can be added free form
+// IN SETS OF FOUR TO MAKE 1xFACE, i.e.
+// 0x         0y        0z
+// 1x         1y        1z
+// 2x         2y        2z
+// 3x         3y        3z
+//
+// indices to 0(xyz), 1(xyz), 2(xyz), 0(xyz), 2(xyz), 3(xyz)
+// with dynamic indexing function
+// also norms and textures dynamically
+//
+// vertices still need to be mirrored on the z-Plane --------------!-
+
+var maskVertices = new Float32Array(
+  [
+    -0.0330,  -0.7478,  -0.7938,
+    0.5961,   -0.4700,  -0.7439,
+    0.6198,   -0.7752,  -0.3154,
+    -0.0094,  -1.0530,  -0.3652,
+
+    0.6379,   0.7550,   -0.6566,
+    -0.0221,  0.8320,   -0.6568,
+    -0.0153,  1,        -0.3575,
+    0.6447,   0.9229,   -0.3573,
+
+    0.6447,   0.9229,   -0.3573,
+    -0.0153,  1,        -0.3575,
+    -0.0177,  0.9448,   0.2327,
+    0.6423,   0.8677,   0.2329,
+
+    -0.0039,  -1.0399,  0.1890,
+    0.6252,   -0.7621,  0.2388,
+    0.5581,   -0.6295,  0.6452,
+    0,        -0.8818,  0.5976,
+
+    0.8787,   0.3821,   0.2777,
+    0.6423,   0.8677,   0.2329,
+    0.6309,   0.6383,   0.6245,
+    0.7127,   0.2992,   0.5722,
+
+    -0.0249,  0.3719,   -0.8022,
+    -0.0221,  0.8320,   -0.6568,
+    0.6379,   0.7550,   -0.6566,
+    0.6540,   0.4338,   -0.8011,
+
+    0.8841,   0.4181,   -0.3573,
+    0.6447,   0.9229,   -0.3573,
+    0.6423,   0.8677,   0.2329,
+    0.8787,   0.3821,   0.2777,
+
+    0.6540,   0.4338,   -0.8011,
+    0.6379,   0.7550,   -0.6566,
+    0.6447,   0.9229,   -0.3573,
+    0.8841,   0.4181,   -0.3573,
+
+    0.7127,   0.2992,   0.5722,
+    0.6309,   0.6383,   0.6245,
+    0,        0.8095,   0.6766,
+    -0.0214,  0.2708,   0.7517,
+
+    0.6423,   0.8677,   0.2329,
+    -0.0177,  0.9448,   0.2327,
+    0,        0.8095,   0.6766,
+    0.6309,   0.6383,   0.6245,
+    
+    -0.0094,  -1.0530,  -0.3652,
+    0.6198,   -0.7752,  -0.3154,
+    0.6252,   -0.7621,  0.2388,
+    -0.0039,  -1.0399,  0.1890,
+    
+    0.5581,   -0.6295,  0.6452,
+    0.7571,   -0.257,   0.6246,
+    0,        -0.1872,  1.0728,
+    0,        -0.8818,  0.5976,
+
+    0.5961,   -0.4700,  -0.7439,
+    0.6540,   -0.2282,  -0.8011,
+    0.8841,   -0.2440,  -0.3573,
+    0.6198,   -0.7752,  -0.3154,
+
+    0.6198,   -0.7752,  -0.3154,
+    0.8841,   -0.2440,  -0.3573,
+    0.8841,   -0.2440,  0.3214,
+    0.6252,   -0.7621,  0.2388,
+
+    -0.0330,  -0.7478,  -0.7938,
+    -0.0249,  -0.2902,  -0.8022,
+    0.6540,   -0.2282,  -0.8011,
+    0.5961,   -0.4700,  -0.7439,
+
+    0.6252,   -0.7621,  0.2388,
+    0.8841,   -0.2440,  0.3214,
+    0.7571,   -0.257,   0.6246,
+    0.5581,   -0.6295,  0.6452,
+
+    0.7571,   -0.2570,  0.6246,
+    0.7127,   0.2992,   0.5722,
+    -0.021,   0.2708,   0.751,
+    0,        -0.1872,  1.0728,
+
+    0.6540,   -0.2282,  -0.8011,
+    0.6540,   0.4338,   -0.8011,
+    0.8841,   0.4181,   -0.3573,
+    0.8841,   -0.2440,  -0.3573,
+
+    0.8841,   -0.244,   -0.3573,
+    0.8841,   0.4181,   -0.3573,
+    0.8787,   0.3821,   0.2777,
+    0.8841,   -0.2440,  0.3214,
+
+    0.8841,   -0.2440,  0.3214,
+    0.8787,   0.3821,   0.2777,
+    0.7127,   0.2992,   0.5722,
+    0.7571,   -0.257,   0.6246,
+
+    -0.0249,  -0.2902,  -0.8022,
+    -0.0249,  0.3719,   -0.8022,
+    0.6540,   0.4338,   -0.8011,
+    0.6540,   -0.2282,  -0.8011
+    
+]);
+
+function normalsArrByVList(v) { 
+  var normals = [];
+  for (i = 0; i < v; i++) {
+    if (i == 0) { // first
+
+    }
+
+    if (i == v) { // last
+
+    }
+
+    normals[i] = 1; // ----------------------------- not finished
+  }
+
+  console.log(normals);
+  return normals;
+}
+
+var maskNormals =  new Float32Array(normalsArrByVList(maskVertices.length));
+
+function texturesArrByVList(v) { 
+  var textures = [];
+  for (i = 0; i < v; i++) {
+    textures[i] = 1; // ----------------------------- finished?
+  }
+
+  console.log(textures);
+  return textures;
+}
+
+var maskTextures =  new Float32Array(texturesArrByVList(maskVertices.length/2));
+
+// JH 1: 
+// algorithmic solution to index calculation
+// 
+
+function indexArrByVList(v) { 
+  var indexes = [];
+  var sideCounter = 0; // keeps track of sides, or faces
+  var vertexInnerCounter = 0; // counts face-vertices, 0 - 5
+  for (i = 0; i < v; i++) {
+    if (i % 6 == 0) {
+      indexes[i] = sideCounter * 4;
+      vertexInnerCounter++;
+    } else if (i % 6 == 1) {
+      indexes[i] = sideCounter * 4 + 1;
+      vertexInnerCounter++;
+    } else if (i % 6 == 2) {
+      indexes[i] = sideCounter * 4 + 2;
+      vertexInnerCounter++;
+    } else if (i % 6 == 3) {
+      indexes[i] = sideCounter * 4;
+      vertexInnerCounter++;
+    } else if (i % 6 == 4) {
+      indexes[i] = sideCounter * 4 + 2;
+      vertexInnerCounter++;
+    } else if (i % 6 == 5) {
+      indexes[i] = sideCounter * 4 + 3;
+      vertexInnerCounter++;
+    }
+
+    if (vertexInnerCounter % 6 == 0) {
+      sideCounter++;
+      vertexInnerCounter = 0;
+    }
+  }
+
+  console.log(indexes);
+  return indexes;
+}
+
+var maskIndices =  new Float32Array(indexArrByVList(maskVertices.length/2));
+
+// sample set to illustrate
+
+/*var maskIndices =  new Float32Array([
+  0, // 0
+  1, // 1
+  2, // 2
+  0, // 3
+  2, // 4
+  3, // 5
+
+  4, // 6
+  5, // 7
+  6, // 8
+  4, // 9
+  6, // 10
+  7, // 11
+
+  8, // 12
+  9, // ...
+  .
+  .
+  .
+
+]);*/
+
+// fn for mask
+function makeMask() {
   var position = maskVertices;
   var normal = maskNormals;
   var texture = maskTextures;
