@@ -3,7 +3,7 @@ var gl = null,
   program = null;
 
 //Camera
-var cameraAutostartEnabled = true;
+var cameraAutostartEnabled = false;
 var animationSpeedupFactor = 1.0;
 var camera = null;
 var cameraPos = vec3.create();
@@ -376,11 +376,11 @@ var maskIndices =  new Float32Array([
 // 2x         2y        2z
 // 3x         3y        3z
 //
-// indices to 0(xyz), 1(xyz), 2(xyz), 0(xyz), 2(xyz), 3(xyz)
+// indexes to 0(xyz), 1(xyz), 2(xyz), 0(xyz), 2(xyz), 3(xyz)
 // with dynamic indexing function
 // also norms and textures dynamically
 //
-// vertices still need to be mirrored on the z-Plane --------------!-
+// vertices still need to be mirrored on the z-Plane: do in SG
 
 var maskVertices = new Float32Array(
   [
@@ -491,22 +491,100 @@ var maskVertices = new Float32Array(
     
 ]);
 
+// vector class for cross prod calc (normals calc)
+class Vector {
+  constructor(...components) {
+    this.components = components
+  }
+  
+  // 3D vectors only
+  crossProduct({ components }) {
+    return new Vector(
+      this.components[1] * components[2] - this.components[2] * components[1],
+      this.components[2] * components[0] - this.components[0] * components[2],
+      this.components[0] * components[1] - this.components[1] * components[0]
+    )
+  }
+}
+
 function normalsArrByVList(v) { 
-  var normals = [];
-  for (i = 0; i < v; i++) {
-    if (i == 0) { // first
+  var verticeSum = v/3;
 
-    }
+  var vertices = [];
 
-    if (i == v) { // last
-
-    }
-
-    normals[i] = 1; // ----------------------------- not finished
+  // collect vertices in array form for vertex calcs
+  for (i = 0; i < verticeSum; i++) {
+    vertices[i] = [maskVertices[i * 3], maskVertices[i * 3 + 1], maskVertices[i * 3 + 2]];  
   }
 
-  console.log(normals);
-  return normals;
+  //console.log(vertices);
+
+  var neigboringVerticeA, neighboringVerticeB;
+  var edge_a, edge_b;
+
+  var cross;
+  var crossToArr = [];
+
+  for (i = 0; i < verticeSum; i++) { 
+
+    if (i % 4 == 0) {
+      neigboringVerticeA = vertices[i + 1];
+      neigboringVerticeB = vertices[i + 2];
+      
+      edge_a = new Vector(neigboringVerticeA[0] - vertices[i][0], neigboringVerticeA[1] - vertices[i][1], neigboringVerticeA[2] - vertices[i][2]);
+      edge_b = new Vector(neigboringVerticeB[0] - vertices[i][0], neigboringVerticeB[1] - vertices[i][1], neigboringVerticeB[2] - vertices[i][2]);
+
+      cross = edge_a.crossProduct(edge_b);
+      //console.log(cross);
+
+      crossToArr.push(cross.components[0]);
+      crossToArr.push(cross.components[1]);
+      crossToArr.push(cross.components[2]);
+    } else if (i % 4 == 1) {
+      neigboringVerticeA = vertices[i - 1];
+      neigboringVerticeB = vertices[i + 1];
+      
+      edge_a = new Vector(neigboringVerticeA[0] - vertices[i][0], neigboringVerticeA[1] - vertices[i][1], neigboringVerticeA[2] - vertices[i][2]);
+      edge_b = new Vector(neigboringVerticeB[0] - vertices[i][0], neigboringVerticeB[1] - vertices[i][1], neigboringVerticeB[2] - vertices[i][2]);
+
+      cross = edge_a.crossProduct(edge_b);
+      //console.log(cross);
+
+      crossToArr.push(cross.components[0]);
+      crossToArr.push(cross.components[1]);
+      crossToArr.push(cross.components[2]);
+    } else if (i % 4 == 2) {
+      neigboringVerticeA = vertices[i - 1];
+      neigboringVerticeB = vertices[i - 2];
+      
+      edge_a = new Vector(neigboringVerticeA[0] - vertices[i][0], neigboringVerticeA[1] - vertices[i][1], neigboringVerticeA[2] - vertices[i][2]);
+      edge_b = new Vector(neigboringVerticeB[0] - vertices[i][0], neigboringVerticeB[1] - vertices[i][1], neigboringVerticeB[2] - vertices[i][2]);
+
+      cross = edge_a.crossProduct(edge_b);
+      //console.log(cross);
+
+      crossToArr.push(cross.components[0]);
+      crossToArr.push(cross.components[1]);
+      crossToArr.push(cross.components[2]);
+    } else {
+      neigboringVerticeA = vertices[i - 1];
+      neigboringVerticeB = vertices[i - 3];
+      
+      edge_a = new Vector(neigboringVerticeA[0] - vertices[i][0], neigboringVerticeA[1] - vertices[i][1], neigboringVerticeA[2] - vertices[i][2]);
+      edge_b = new Vector(neigboringVerticeB[0] - vertices[i][0], neigboringVerticeB[1] - vertices[i][1], neigboringVerticeB[2] - vertices[i][2]);
+
+      cross = edge_a.crossProduct(edge_b);
+      //console.log(cross);
+
+      crossToArr.push(cross.components[0]);
+      crossToArr.push(cross.components[1]);
+      crossToArr.push(cross.components[2]);
+    }
+
+  }
+
+  //console.log(crossToArr);
+  return crossToArr;
 }
 
 var maskNormals =  new Float32Array(normalsArrByVList(maskVertices.length));
@@ -514,7 +592,7 @@ var maskNormals =  new Float32Array(normalsArrByVList(maskVertices.length));
 function texturesArrByVList(v) { 
   var textures = [];
   for (i = 0; i < v; i++) {
-    textures[i] = 1; // ----------------------------- finished?
+    textures[i] = 1; // ----------------------- simple texture
   }
 
   console.log(textures);
