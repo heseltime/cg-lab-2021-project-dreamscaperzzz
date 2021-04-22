@@ -2,8 +2,9 @@
 var gl = null,
   program = null;
 
-
 //Camera
+var cameraAutostartEnabled = true;
+var animationSpeedupFactor = 1.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
@@ -11,6 +12,11 @@ var cameraAnimation = null;
 
 // scenegraph root node
 var root = null;
+
+//mask circle
+var maskCircleTM = mat4.create();
+var maskCircleAnimation;
+var singleMaskAnimation = [];
 
 // time in last render step
 var previousTime = 0;
@@ -36,27 +42,45 @@ function init(resources) {
   gl = createContext();
 
   //setup camera
-  cameraStartPos = vec3.fromValues(0, 0, 0);
-  cameraEndAnimationPos = vec3.fromValues(0, 1, -20);
-  camera = new UserControlledCamera(gl.canvas, cameraEndAnimationPos);
+  let cameraDefaultPos = vec3.fromValues(0, 1, -50);
+  camera = new UserControlledCamera(gl.canvas, cameraDefaultPos);
   //setup an animation for the camera, moving it into position
-  defaultDuration = 1000; 
-  cameraMats = [];
-  cameraMatStart = mat4.translate(mat4.create(), mat4.create(), cameraStartPos)
-  maskAngleUp = -10;
-  maskAngleLeft = 10;
-  maskAngleRight = -10;
-  cameraMats.push({matrix: cameraMatStart, duration: 1});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
-  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
-  cameraMats.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: defaultDuration});
-  cameraMats.push({matrix: cameraMatStart, duration: defaultDuration});
-  cameraMats.push({matrix: progress => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), cameraMatStart, glm.deg2rad(180*(1-Math.cos(progress*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(progress*Math.PI))), duration: 10*defaultDuration});
-  cameraMats.push({matrix: mat4.translate(mat4.create(), mat4.create(), cameraEndAnimationPos), duration: defaultDuration});
-  cameraAnimation = new Animation(camera, cameraMats, false);
-  cameraAnimation.start()
+  cameraAnimation = createCameraAnimation(camera, false, cameraDefaultPos);  
+  if (cameraAutostartEnabled) {
+    cameraAnimation.start()
+  }
+
   //TODO create your own scenegraph
   root = createSceneGraph(gl, resources);
+
+  createSingleMaskAnimation();
+}
+
+function createCameraAnimation(camera, doLooping, lastStepPos) {
+  let steps = [];
+  let maskAngleUp = -10;
+  let maskAngleLeft = 15;
+  let maskAngleRight = -15;
+  let maskFocusDuration = 1500;
+  let maskLookaroundDuration = 6000;
+
+  let startMatrix = mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 0, 0));
+
+  steps.push({matrix: startMatrix, duration: 1});
+  steps.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(maskAngleLeft)), glm.deg2rad(maskAngleUp)), duration: maskFocusDuration});    
+  steps.push({matrix: startMatrix, duration: maskFocusDuration});
+  steps.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: maskFocusDuration});
+  steps.push({matrix: startMatrix, duration: maskFocusDuration});
+  steps.push({matrix: p => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(180*(1-Math.cos(p*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(p*Math.PI))), duration: maskLookaroundDuration});
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 10, -50)), duration: 2000});
+  steps.push({matrix: p => mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360 * p)), vec3.fromValues(0, 10, -50)), duration: 2000});
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360)), vec3.fromValues(0, 10, -50)), duration: 2000});
+
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), lastStepPos), duration: 1000});
+  steps.forEach(p => p.duration *= animationSpeedupFactor);
+  
+  let cameraAnimation = new Animation(camera, steps, doLooping);
+  return cameraAnimation;
 }
 
 function createSceneGraph(gl, resources) {
@@ -75,7 +99,7 @@ function createSceneGraph(gl, resources) {
   light.ambient = [.5, .5, .5, 1];
   light.diffuse = [1, 1, 1, 1];
   light.specular = [1, 1, 1, 1];
-  light.position = [0, 2, 2];
+  light.position = [0, 10, 0];
   light.append(createLightSphere(resources));
   // add light to scenegraph
   root.append(light);
@@ -90,9 +114,24 @@ function createSceneGraph(gl, resources) {
   mask.specular = [0.5, 0.5, 0.5, 1];
   mask.shininess = 3;
 
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5, 0], rotateX: -90, scale: 3 }), [
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, 1.5, 0], rotateX: -90, scale: 1 }), [
     mask
   ]));
+
+  let maskCircle = new SGNode();
+  root.append(maskCircle);
+  
+  maskCircleTM = mat4.create();
+  let maskCircleTransformation = new TransformationSGNode(maskCircleTM);
+  maskCircle.append(maskCircleTransformation);
+  
+  let maskCircleAnimationMat = [
+    { matrix: mat4.create(), duration: 13000 },
+    { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
+  ];
+  maskCircleAnimationMat.forEach(p => p.duration *= animationSpeedupFactor);
+  maskCircleAnimation = new Animation(maskCircleTransformation, maskCircleAnimationMat, false);
+  maskCircleAnimation.start();
 
   // create C3PO
   let c3po = new MaterialSGNode([
@@ -103,22 +142,19 @@ function createSceneGraph(gl, resources) {
   c3po.diffuse = [0.75164, 0.60648, 0.22648, 1];
   c3po.specular = [0.628281, 0.555802, 0.366065, 1];
   c3po.shininess = 50;
-  let transformNode = new TransformationSGNode(glm.translate(0, -1.5, 0), [
-    c3po
-  ]);
-  // add C3PO to scenegraph
-  //root.append(transformNode);
-
   //add c3pos in circle to act as dummy masks
-  c3poNum = 20;
+  c3poNum = 15;
   for (i = 0; i < c3poNum; i++) {
-    let transformNode = new TransformationSGNode(mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.create(), glm.deg2rad(360/c3poNum*i+90)), vec3.fromValues(10, -0.5, 0)), [
-      c3po 
-    ]);
+    let angle = 2.0 * Math.PI * i / c3poNum;
+    let distanceFromCenter = 15;
+    let animationWrapperNode = new TransformationSGNode(mat4.create(mat4.identity), c3po);
+    let maskAnimation = new Animation(animationWrapperNode, [], false);
+    singleMaskAnimation.push(maskAnimation);
+    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/c3poNum*i+180 }), animationWrapperNode);
     // add C3PO to scenegraph
-    root.append(transformNode);
+    maskCircleTransformation.append(transformNode);
   }
-
+  
   // create floor
   let floor = new MaterialSGNode([
     new RenderSGNode(makeRect(2, 2))
@@ -129,7 +165,7 @@ function createSceneGraph(gl, resources) {
   floor.specular = [0.5, 0.5, 0.5, 1];
   floor.shininess = 3;
   // add floor to scenegraph
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5, 0], rotateX: -90, scale: 3 }), [
+  root.append(new TransformationSGNode(glm.transform({ translate: [0, -0.1, 0], rotateX: -90, scale: 10 }), [
     floor
   ]));
 
@@ -170,6 +206,8 @@ function render(timeInMilliseconds) {
   }
 
   //TODO use your own scene for rendering
+  maskCircleAnimation.update(deltaTime);
+  singleMaskAnimation.forEach(p => p.update(deltaTime));
 
   //Apply camera
   camera.render(context);
@@ -179,6 +217,24 @@ function render(timeInMilliseconds) {
 
   //request another call as soon as possible
   requestAnimationFrame(render);
+}
+
+function createSingleMaskAnimation() {  
+  for (i = 0; i < singleMaskAnimation.length; i++) {
+    let animation = singleMaskAnimation[i];
+    let steps = [];
+    steps.push({matrix: mat4.create(mat4.identity), duration: 15000});
+    steps.push({matrix: (ii => p => mat4.rotateY(mat4.create(),
+                                          mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3 * (p+1) * (1-Math.cos(p*10*Math.PI))/2.0, 0)),
+                                          glm.deg2rad(p * 360 * 10 * (ii % 3 + 1))))(i)
+                                          ,
+                                          duration: 6000 });
+    
+    steps.forEach(p => p.duration *= animationSpeedupFactor);
+    animation.segments = steps;
+    animation.currentSegment = steps[0];
+    animation.start();
+  }
 }
 
 /**
