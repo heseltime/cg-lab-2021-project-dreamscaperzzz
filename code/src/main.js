@@ -366,8 +366,7 @@ var maskIndices =  new Float32Array([
 ]);
 
 // ------------------------------------------
-// JH1: HANDCRAFTED OBJ (SYMMETRICAL MASK
-//      w/ ca 80 V each)
+// JH1: HANDCRAFTED OBJ, 60 V per Half-Mask
 //
 // mask in half cube (normalized) space
 // vertices can be added free form
