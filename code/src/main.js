@@ -4,11 +4,13 @@ var gl = null,
 
 //Camera
 var cameraAutostartEnabled = true;
-var animationSpeedupFactor = 1.0;
+var animationSpeedupFactor = 1.0/2.0*3.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
 var cameraAnimation = null;
+var maskFocusDuration = 1500;
+var maskLookaroundDuration = 6000;
 
 // scenegraph root node
 var root = null;
@@ -17,6 +19,7 @@ var root = null;
 var maskCircleTM = mat4.create();
 var maskCircleAnimation;
 var singleMaskAnimation = [];
+var eyeAnimation;
 
 // time in last render step
 var previousTime = 0;
@@ -61,8 +64,6 @@ function createCameraAnimation(camera, doLooping, lastStepPos) {
   let maskAngleUp = -10;
   let maskAngleLeft = 15;
   let maskAngleRight = -15;
-  let maskFocusDuration = 1500;
-  let maskLookaroundDuration = 6000;
 
   let startMatrix = mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 0, 0));
 
@@ -72,8 +73,8 @@ function createCameraAnimation(camera, doLooping, lastStepPos) {
   steps.push({matrix: mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(maskAngleRight)), glm.deg2rad(maskAngleUp)), duration: maskFocusDuration});
   steps.push({matrix: startMatrix, duration: maskFocusDuration});
   steps.push({matrix: p => mat4.rotateX(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(180*(1-Math.cos(p*Math.PI)))), glm.deg2rad(maskAngleUp*Math.sin(p*Math.PI))), duration: maskLookaroundDuration});
-  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 10, -50)), duration: 2000});
-  steps.push({matrix: p => mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360 * p)), vec3.fromValues(0, 10, -50)), duration: 2000});
+  steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 10, -50)), duration: 3000});
+  steps.push({matrix: p => mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360 * p)), vec3.fromValues(0, 10, -50)), duration: 3000});
   steps.push({matrix: mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.identity(mat4.create()), glm.deg2rad(360)), vec3.fromValues(0, 10, -50)), duration: 2000});
 
   steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), lastStepPos), duration: 1000});
@@ -104,57 +105,76 @@ function createSceneGraph(gl, resources) {
   // add light to scenegraph
   root.append(light);
 
-  // JH1 mask test
-  let mask = new MaterialSGNode([
+  //single mask
+  let maskSurface = new MaterialSGNode([
     new RenderSGNode(makeMask())
   ]);
-
-  mask.ambient = [0.2, 0.2, 0.2, 1];
-  mask.diffuse = [0.1, 0.1, 0.1, 1];
-  mask.specular = [0.5, 0.5, 0.5, 1];
-  mask.shininess = 3;
-
-  root.append(new TransformationSGNode(glm.transform({ translate: [0, 1.5, 0], rotateX: -90, scale: 1 }), [
-    mask
-  ]));
-
-  let maskCircle = new SGNode();
-  root.append(maskCircle);
+  let leftMaskSurface = new TransformationSGNode(glm.transform({translate: [0, 0, 0]}), maskSurface);
+  let rightMaskSurface = new TransformationSGNode(glm.transform({translate: [0, 0, 0], scale: [-1, 1, 1]}), maskSurface);
+  let mainMask = new TransformationSGNode(glm.transform({translate: [0, 1.5, 0], rotateY: 180}), [leftMaskSurface, rightMaskSurface]);
   
+  let maskEye = new TransformationSGNode(mat4.create(), new MaterialSGNode([
+    new RenderSGNode(makeSphere(0.1, 15, 15))
+  ]));
+  let leftEye = new TransformationSGNode(glm.transform({translate: [-0.5, 1.7, -0.7]}), maskEye);
+  let rightEye = new TransformationSGNode(glm.transform({translate: [0.5, 1.7, -0.7]}), maskEye);
+  let maskEyes = new TransformationSGNode(mat4.create(), [leftEye, rightEye]);
+
+  let fullMask = new TransformationSGNode(mat4.create(), [mainMask, maskEyes]);
+
+  maskSurface.ambient = [0.2, 0.2, 0.2, 1];
+  maskSurface.diffuse = [0.5, 0.5, 0.5, 1];
+  maskSurface.specular = [0.5, 0.5, 0.5, 1];
+  maskSurface.shininess = 3;
+  
+  maskEye.ambient = [0.5, 0.5, 0.5, 1];
+  maskEye.diffuse = [0.8, 0.8, 0.8, 1];
+  maskEye.specular = [0.9, 0.9, 0.9, 1];
+  maskEye.shininess = 50;
+
+  root.append(new TransformationSGNode(mat4.create(), fullMask));
+
+  //circle of masks
+  maskNum = 15;
   maskCircleTM = mat4.create();
   let maskCircleTransformation = new TransformationSGNode(maskCircleTM);
-  maskCircle.append(maskCircleTransformation);
-  
-  let maskCircleAnimationMat = [
+  let maskCircle = new SGNode(maskCircleTransformation);
+
+  for (i = 0; i < maskNum; i++) {
+    let angle = 2.0 * Math.PI * i / maskNum;
+    let distanceFromCenter = 15;
+    let animationWrapperNode = new TransformationSGNode(mat4.create(mat4.identity), fullMask);
+    let maskAnimation = new Animation(animationWrapperNode, [], false);
+    singleMaskAnimation.push(maskAnimation);
+    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/maskNum*i }), animationWrapperNode);
+    maskCircleTransformation.append(transformNode);
+  }
+
+
+  //animations
+  let maskCircleAnimationSteps = [
     { matrix: mat4.create(), duration: 13000 },
     { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
   ];
-  maskCircleAnimationMat.forEach(p => p.duration *= animationSpeedupFactor);
-  maskCircleAnimation = new Animation(maskCircleTransformation, maskCircleAnimationMat, false);
+  maskCircleAnimationSteps.forEach(p => p.duration *= animationSpeedupFactor);
+  maskCircleAnimation = new Animation(maskCircleTransformation, maskCircleAnimationSteps, false);
   maskCircleAnimation.start();
 
-  // create C3PO
-  let c3po = new MaterialSGNode([
-    new RenderSGNode(resources.model)
-  ]);
-  //gold
-  c3po.ambient = [0.24725, 0.1995, 0.0745, 1];
-  c3po.diffuse = [0.75164, 0.60648, 0.22648, 1];
-  c3po.specular = [0.628281, 0.555802, 0.366065, 1];
-  c3po.shininess = 50;
-  //add c3pos in circle to act as dummy masks
-  c3poNum = 15;
-  for (i = 0; i < c3poNum; i++) {
-    let angle = 2.0 * Math.PI * i / c3poNum;
-    let distanceFromCenter = 15;
-    let animationWrapperNode = new TransformationSGNode(mat4.create(mat4.identity), c3po);
-    let maskAnimation = new Animation(animationWrapperNode, [], false);
-    singleMaskAnimation.push(maskAnimation);
-    let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/c3poNum*i+180 }), animationWrapperNode);
-    // add C3PO to scenegraph
-    maskCircleTransformation.append(transformNode);
-  }
-  
+  let eyeAnimationSteps = [
+    { matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(-0.02, -0.2, 0)), duration: maskFocusDuration },
+    { matrix: mat4.create(), duration: maskFocusDuration },
+    { matrix: mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0.02, -0.2, 0)), duration: maskFocusDuration },
+    { matrix: mat4.create(), duration: maskFocusDuration },
+    { matrix: mat4.create(), duration: maskLookaroundDuration },
+    { matrix: p => glm.transform({scale: 0.6 * Math.sin(p * 20 * 2 * Math.PI) + 1.6}), duration: 25000 },
+    { matrix: mat4.create(), duration: 1000 },
+  ];
+  eyeAnimationSteps.forEach(p => p.duration *= animationSpeedupFactor);
+  eyeAnimation = new Animation(maskEye, eyeAnimationSteps, false);
+  eyeAnimation.start();
+
+  root.append(maskCircle);
+    
   // create floor
   let floor = new MaterialSGNode([
     new RenderSGNode(makeRect(2, 2))
@@ -208,6 +228,7 @@ function render(timeInMilliseconds) {
   //TODO use your own scene for rendering
   maskCircleAnimation.update(deltaTime);
   singleMaskAnimation.forEach(p => p.update(deltaTime));
+  eyeAnimation.update(deltaTime);
 
   //Apply camera
   camera.render(context);
