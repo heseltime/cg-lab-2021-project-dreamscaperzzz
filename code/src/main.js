@@ -259,7 +259,7 @@ function createSingleMaskAnimation() {
 }
 
 /**
- * JH1: hand-crafted mask testing from cube example
+ * hand-crafted mask testing from cube example
  */
 
 // half cube vars
@@ -387,7 +387,7 @@ var maskIndices =  new Float32Array([
 ]);
 
 // ------------------------------------------
-// JH1: HANDCRAFTED OBJ, 60 V per Half-Mask
+// HANDCRAFTED OBJ, 60 V per Half-Mask
 //
 // mask in half cube (normalized) space
 // vertices can be added free form
@@ -614,6 +614,7 @@ function texturesArrByVList(v) {
   var textures = [];
   for (i = 0; i < v; i++) {
     textures[i] = 1; // ----------------------- simple texture
+    // still needed: 2. Hand-crafted object / b) Apply a texture to your self-created complex object by setting proper texture coordinates.
   }
 
   console.log(textures);
@@ -622,7 +623,7 @@ function texturesArrByVList(v) {
 
 var maskTextures =  new Float32Array(texturesArrByVList(maskVertices.length/2));
 
-// JH 1: 
+// 
 // algorithmic solution to index calculation
 // 
 
