@@ -21,6 +21,9 @@ var maskCircleAnimation;
 var singleMaskAnimation = [];
 var eyeAnimation;
 
+//scene logic
+var convergeBillboardStarted = false;
+
 // time in last render step
 var previousTime = 0;
 
@@ -229,6 +232,24 @@ function render(timeInMilliseconds) {
   maskCircleAnimation.update(deltaTime);
   singleMaskAnimation.forEach(p => p.update(deltaTime));
   eyeAnimation.update(deltaTime);
+
+  // BILLBOARDING CONVERGE TEST
+  // wait for circle animation to finish --> converge to camera position
+  if (!maskCircleAnimation.running && !convergeBillboardStarted) {
+    // ANOTHER ANIMATION
+    //let maskCircleAnimationSteps2 = [
+    //  { matrix: mat4.create(), duration: 13000 },
+    //  { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
+    //];
+    //maskCircleAnimationSteps2.forEach(p => p.duration *= animationSpeedupFactor);
+    //maskCircleAnimation = new Animation(root.maskCircleTM, maskCircleAnimationSteps2, false);
+    // --> translation to orient towards camera position: how to get? how to calculate? (1)
+    // --> ideal would be a movement that slows down based on distance, asymotically (2)
+    //maskCircleAnimation.start();
+
+    // logic
+    convergeBillboardStarted = true;
+  }
 
   //Apply camera
   camera.render(context);
