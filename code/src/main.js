@@ -19,7 +19,10 @@ var root = null;
 var maskCircleTM = mat4.create();
 var maskCircleAnimation;
 var singleMaskAnimation = [];
+var billboardAnimations = []; //a list of animation objects bound to each mask
 var eyeAnimation;
+
+var billboardAnimationsRunning = false;
 
 // time in last render step
 var previousTime = 0;
@@ -57,6 +60,7 @@ function init(resources) {
   root = createSceneGraph(gl, resources);
 
   createSingleMaskAnimation();
+  createBillboardAnimation();
 }
 
 function createCameraAnimation(camera, doLooping, lastStepPos) {
@@ -127,9 +131,9 @@ function createSceneGraph(gl, resources) {
   maskSurface.specular = [0.5, 0.5, 0.5, 1];
   maskSurface.shininess = 3;
   
-  maskEye.ambient = [0.5, 0.5, 0.5, 1];
-  maskEye.diffuse = [0.8, 0.8, 0.8, 1];
-  maskEye.specular = [0.9, 0.9, 0.9, 1];
+  maskEye.ambient = [1.0, 0.2, 0.2, 1];
+  maskEye.diffuse = [1.0, 0.2, 0.2, 1];
+  maskEye.specular = [1.0, 0.2, 0.2, 1];
   maskEye.shininess = 50;
 
   root.append(new TransformationSGNode(mat4.create(), fullMask));
@@ -145,6 +149,10 @@ function createSceneGraph(gl, resources) {
     let distanceFromCenter = 15;
     let animationWrapperNode = new TransformationSGNode(mat4.create(mat4.identity), fullMask);
     let maskAnimation = new Animation(animationWrapperNode, [], false);
+
+    let billboardAnimationOnMask = new Animation(animationWrapperNode, [], false);
+    billboardAnimations.push(billboardAnimationOnMask);
+
     singleMaskAnimation.push(maskAnimation);
     let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/maskNum*i }), animationWrapperNode);
     maskCircleTransformation.append(transformNode);
@@ -192,7 +200,6 @@ function createSceneGraph(gl, resources) {
   return root;
 }
 
-
 /**
  * render one frame
  */
@@ -229,6 +236,16 @@ function render(timeInMilliseconds) {
   maskCircleAnimation.update(deltaTime);
   singleMaskAnimation.forEach(p => p.update(deltaTime));
   eyeAnimation.update(deltaTime);
+  if (billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.update(deltaTime));
+  }
+
+  //Billboarding Animation
+  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.start());
+    billboardAnimationsRunning = true;
+  }
+
 
   //Apply camera
   camera.render(context);
@@ -255,6 +272,23 @@ function createSingleMaskAnimation() {
     animation.segments = steps;
     animation.currentSegment = steps[0];
     animation.start();
+  }
+}
+
+function createBillboardAnimation() {
+  for (i = 0; i < billboardAnimations.length; i++) {
+    let animation = billboardAnimations[i];
+    let steps = [];
+    steps.push({matrix: mat4.create(mat4.identity), duration: 3000});
+    steps.push({matrix: (ii => p => mat4.rotateY(mat4.create(),
+                                          mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3 * (p+1) * (1-Math.cos(p*10*Math.PI))/2.0, 0)),
+                                          glm.deg2rad(p * 360 * 10 * (ii % 3 + 1))))(i)
+                                          ,
+                                          duration: 6000 });
+    
+    steps.forEach(p => p.duration *= animationSpeedupFactor);
+    animation.segments = steps;
+    animation.currentSegment = steps[0];
   }
 }
 
