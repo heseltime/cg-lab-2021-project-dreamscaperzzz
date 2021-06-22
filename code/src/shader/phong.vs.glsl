@@ -10,6 +10,7 @@ uniform mat3 u_normalMatrix;
 uniform mat4 u_projection;
 
 uniform vec3 u_lightPos;
+uniform vec3 u_light2Pos;
 
 //output of this shader
 varying vec3 v_normalVec;
@@ -25,6 +26,7 @@ void main() {
   v_eyeVec = -eyePosition.xyz;
 	//light position as uniform
 	v_lightVec = u_lightPos - eyePosition.xyz;
+	v_light2Vec = u_light2Pos - eyePosition.xyz;
 
 	gl_Position = u_projection * eyePosition;
 }

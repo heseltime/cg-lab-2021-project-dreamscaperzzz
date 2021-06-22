@@ -195,6 +195,27 @@ function createSceneGraph(gl, resources) {
   // add light to scenegraph
   root.append(light);
 
+  // new light == spot
+  let light2 = new LightNode();
+  light2.uniform = 'u_light2';
+  light2.angle = 120.0;
+  light2.ambient = [0, 0, 0, 1];
+  light2.diffuse = [1, 0, 0, 1];
+  light2.specular = [1, 0, 0, 1];
+  light2.position = [13, 12, 0];
+  light2.append(createLightSphere());
+  rotateLight2 = new TransformationSGNode(mat4.create(), [
+      light2
+  ]);
+  root.append(rotateLight2);
+
+  // animate light 2
+  light2Animation = new Animation(rotateLight2, [
+    { matrix: progress => mat4.rotateY(mat4.create(), mat4.translate(mat4.create(), mat4.create(), [0, 0, 0]), glm.deg2rad(-360 * progress)), duration: 3000 },
+  ],
+  true);
+  light2Animation.start();
+
   //single mask
   let maskSurface = new MaterialSGNode([
     new RenderSGNode(makeMask())
@@ -334,6 +355,14 @@ function render(timeInMilliseconds) {
     billboardAnimationsRunning = true;
   }
 
+  // light updates
+  light2Animation.update(deltaTime);
+
+  //Billboarding Animation
+  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.start());
+    billboardAnimationsRunning = true;
+  }
 
   //Apply camera
   camera.render(context);
@@ -367,14 +396,8 @@ function createBillboardAnimation() {
   for (i = 0; i < billboardAnimations.length; i++) {
     let animation = billboardAnimations[i];
     let steps = [];
-    steps.push({matrix: mat4.create(mat4.identity), duration: 3000});
-    steps.push({matrix: (ii => p => mat4.rotateY(mat4.create(),
-                                          mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3 * (p+1) * (1-Math.cos(p*10*Math.PI))/2.0, 0)),
-                                          glm.deg2rad(p * 360 * 10 * (ii % 3 + 1))))(i)
-                                          ,
-                                          duration: 6000 });
-    
-    steps.forEach(p => p.duration *= animationSpeedupFactor);
+    steps.push({matrix: mat4.create(mat4.identity), duration: 1000});
+    //steps.push({matrix: p => mat4.translate(mat4.create(mat4.identity), mat4.create(mat4.identity), [10 * p, 0, 0]), duration: 1000});
     animation.segments = steps;
     animation.currentSegment = steps[0];
   }
@@ -823,4 +846,84 @@ function makeMask() {
     texture: texture,
     index: index
   };
+}
+
+// Classes
+
+// Custom LightNode to implement spot light, here and in phong fs
+class LightNode extends TransformationSGNode {
+
+  constructor(position, children) {
+    super(null, children);
+    this.position = position || [0, 0, 0];
+    this.ambient = [0, 0, 0, 1];
+    this.diffuse = [1, 1, 1, 1];
+    this.specular = [1, 1, 1, 1];
+    //uniform name
+    //this.uniform = 'u_light2';
+
+    this._worldPosition = null;
+
+    //spot
+    this.direction = [10, 100, 100];
+  }
+
+  setLightUniforms(context) {
+    const gl = context.gl;
+    //no materials in use
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform+'.ambient'))) {
+      return;
+    }
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.ambient'), this.ambient);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.diffuse'), this.diffuse);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.specular'), this.specular);
+
+    //spot
+    gl.uniform1f(gl.getUniformLocation(context.shader, this.uniform+'Angle'), this.angle);
+  }
+
+  setLightPosition(context) {
+    const gl = context.gl;
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform+'Pos'))) {
+      return;
+    }
+    const position = this._worldPosition || this.position;
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'Pos'), position[0], position[1], position[2]);
+
+    //spot
+    const direction = this.direction;
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'Direction'), direction[0], direction[1], direction[2]);
+  }
+
+  computeLightPosition(context) {
+    //transform with the current model view matrix
+    const modelViewMatrix = mat4.multiply(mat4.create(), context.viewMatrix, context.sceneMatrix);
+    const original = this.position;
+    const position =  vec4.transformMat4(vec4.create(), vec4.fromValues(original[0], original[1],original[2], 1), modelViewMatrix);
+
+    // also direction?
+    //const originalD = this.position;
+    //const direction =  vec4.transformMat4(vec4.create(), vec4.fromValues(originalD[0], originalD[1],originalD[2], 1), modelViewMatrix);
+
+    this._worldPosition = position;
+
+  }
+
+  /**
+   * set the light uniforms without updating the last light position
+   */
+  setLight(context) {
+    this.setLightPosition(context);
+    this.setLightUniforms(context);
+  }
+
+  render(context) {
+    this.computeLightPosition(context);
+    this.setLight(context);
+
+    //since this a transformation node update the matrix according to my position
+    this.matrix = glm.translate(this.position[0], this.position[1], this.position[2]);
+    //render children
+    super.render(context);
+  }
 }
