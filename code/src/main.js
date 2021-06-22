@@ -4,7 +4,7 @@ var gl = null,
 
 //Camera
 var cameraAutostartEnabled = true;
-var animationSpeedupFactor = 1.0/20.0*3.0;
+var animationSpeedupFactor = 1.0/2.0*3.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
@@ -25,7 +25,7 @@ var eyeAnimation;
 var billboardAnimationsRunning = false;
 
 //particles
-var initialNumOfParticles = 500;
+var initialNumOfParticles = 100;
 var maxNumOfParticles = 10000;
 
 var particles = [];
@@ -105,12 +105,19 @@ function random1() {
   return Math.random() * 2.0 - 1.0;
 }
 
+function randomFloat(max) {
+  return (Math.random() * 2.0 - 1.0) * max;
+}
+
 function randomVelocity() {
-  var x = random1();
-  x = Math.sign(x) + 0.1;
-  var z = random1();
-  z = Math.sign(z) + 0.1;
-  return vec3.fromValues(random1(), random01(), random1());
+  var max = 5.0;
+  var x = randomFloat(max);
+  var z = randomFloat(max);
+  while(x*x + z*z < 0.3) {
+    x = randomFloat(max);
+    z = randomFloat(max);
+  }
+  return vec3.fromValues(x, random01()*3.0, z);
 }
 
 function randomStartPosition() {
@@ -127,7 +134,7 @@ function addParticles(n) {
       randomStartPosition(),
       random01()*.05+0.01,
       randomVelocity(),
-      random01()*6000)
+      random01()*10000)
     );
     if (particles.length > maxNumOfParticles) {
       return;
