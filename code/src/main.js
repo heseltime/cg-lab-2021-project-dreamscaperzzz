@@ -4,7 +4,7 @@ var gl = null,
 
 //Camera
 var cameraAutostartEnabled = true;
-var animationSpeedupFactor = 1.0/2.0*3.0;
+var animationSpeedupFactor = 1.0/20.0*3.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
@@ -19,10 +19,17 @@ var root = null;
 var maskCircleTM = mat4.create();
 var maskCircleAnimation;
 var singleMaskAnimation = [];
+var billboardAnimations = []; //a list of animation objects bound to each mask
 var eyeAnimation;
 
-//scene logic
-var convergeBillboardStarted = false;
+var billboardAnimationsRunning = false;
+
+//particles
+var initialNumOfParticles = 500;
+var maxNumOfParticles = 10000;
+
+var particles = [];
+var particleRoot;
 
 // time in last render step
 var previousTime = 0;
@@ -33,6 +40,8 @@ loadResources({
   fs: './src/shader/phong.fs.glsl',
   vs_single: './src/shader/single.vs.glsl',
   fs_single: './src/shader/single.fs.glsl',
+  vs_particle: './src/shader/particle.vs.glsl',
+  fs_particle: './src/shader/particle.fs.glsl',
   model: './src/models/C-3PO.obj'
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);
@@ -60,6 +69,7 @@ function init(resources) {
   root = createSceneGraph(gl, resources);
 
   createSingleMaskAnimation();
+  createBillboardAnimation();
 }
 
 function createCameraAnimation(camera, doLooping, lastStepPos) {
@@ -87,6 +97,69 @@ function createCameraAnimation(camera, doLooping, lastStepPos) {
   return cameraAnimation;
 }
 
+function random01() {
+  return Math.random();
+}
+
+function random1() {
+  return Math.random() * 2.0 - 1.0;
+}
+
+function randomVelocity() {
+  var x = random1();
+  x = Math.sign(x) + 0.1;
+  var z = random1();
+  z = Math.sign(z) + 0.1;
+  return vec3.fromValues(random1(), random01(), random1());
+}
+
+function randomStartPosition() {
+  return vec3.fromValues(random1(), 0, random1());
+}
+
+function makeParticleSGNode(p) {
+  return new ParticleSGNode(p, glm.transform({translate: p.position}), new RenderSGNode(makeSphere(p.size, 4, 4)))
+}
+
+function addParticles(n) {
+  for (i = 0; i < n; i++) {
+    particles.push(new Particle(
+      randomStartPosition(),
+      random01()*.05+0.01,
+      randomVelocity(),
+      random01()*6000)
+    );
+    if (particles.length > maxNumOfParticles) {
+      return;
+    }
+  }
+}
+
+function updateParticles(dt) {  
+  particles.forEach(p => {
+    p.position = vec3.scaleAndAdd(vec3.create(), p.position, p.velocity, dt*0.001);
+    p.timeAlive += dt;
+  });
+  var r = 0;
+  while (i < particles.length) {
+    if (particles[i].timeAlive > particles[i].lifetime) {
+      particles[i].isDead = true;
+      particles.splice(i, 1);
+      particleRoot.children.splice(i, 1);
+      r++;
+    }
+    else {
+      i++;
+    }
+  }
+  var numOfNewParticles = Math.ceil(r * random01() + 1);
+  console.log(numOfNewParticles);
+  addParticles(numOfNewParticles);
+  for (i = 0; i < numOfNewParticles; i++) {
+    particleRoot.append(makeParticleSGNode(particles[particles.length - i - 1]));
+  }
+}
+
 function createSceneGraph(gl, resources) {
   //create scenegraph
   const root = new ShaderSGNode(createProgram(gl, resources.vs, resources.fs))
@@ -97,6 +170,13 @@ function createSceneGraph(gl, resources) {
       new RenderSGNode(makeSphere(.2, 10, 10))
     ]);
   }
+
+  //Particle shaders
+  particleRoot = new ShaderSGNode(createProgram(gl, resources.vs_particle, resources.fs_particle));
+  addParticles(initialNumOfParticles);
+  particles.forEach(p => particleRoot.append(makeParticleSGNode(p)));
+  root.append(particleRoot);
+
 
   // create white light node
   let light = new LightSGNode();
@@ -130,9 +210,9 @@ function createSceneGraph(gl, resources) {
   maskSurface.specular = [0.5, 0.5, 0.5, 1];
   maskSurface.shininess = 3;
   
-  maskEye.ambient = [0.5, 0.5, 0.5, 1];
-  maskEye.diffuse = [0.8, 0.8, 0.8, 1];
-  maskEye.specular = [0.9, 0.9, 0.9, 1];
+  maskEye.ambient = [1.0, 0.2, 0.2, 1];
+  maskEye.diffuse = [1.0, 0.2, 0.2, 1];
+  maskEye.specular = [1.0, 0.2, 0.2, 1];
   maskEye.shininess = 50;
 
   root.append(new TransformationSGNode(mat4.create(), fullMask));
@@ -148,6 +228,10 @@ function createSceneGraph(gl, resources) {
     let distanceFromCenter = 15;
     let animationWrapperNode = new TransformationSGNode(mat4.create(mat4.identity), fullMask);
     let maskAnimation = new Animation(animationWrapperNode, [], false);
+
+    let billboardAnimationOnMask = new Animation(animationWrapperNode, [], false);
+    billboardAnimations.push(billboardAnimationOnMask);
+
     singleMaskAnimation.push(maskAnimation);
     let transformNode = new TransformationSGNode(glm.transform({ translate: [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)], rotateY: 360/maskNum*i }), animationWrapperNode);
     maskCircleTransformation.append(transformNode);
@@ -195,7 +279,6 @@ function createSceneGraph(gl, resources) {
   return root;
 }
 
-
 /**
  * render one frame
  */
@@ -215,13 +298,15 @@ function render(timeInMilliseconds) {
   context.projectionMatrix = mat4.perspective(mat4.create(), glm.deg2rad(30), gl.drawingBufferWidth / gl.drawingBufferHeight, 0.01, 100);
   context.viewMatrix = mat4.lookAt(mat4.create(), [0, 1, -10], [0, 0, 0], [0, 1, 0]);
 
-
   var deltaTime = timeInMilliseconds - previousTime;
   previousTime = timeInMilliseconds;
 
   //update animation BEFORE camera
   cameraAnimation.update(deltaTime);
   camera.update(deltaTime);
+
+  //update particles
+  updateParticles(deltaTime);
 
   //At the end of the automatic flight, switch to manual control
   if(!cameraAnimation.running && !camera.control.enabled) {
@@ -232,6 +317,16 @@ function render(timeInMilliseconds) {
   maskCircleAnimation.update(deltaTime);
   singleMaskAnimation.forEach(p => p.update(deltaTime));
   eyeAnimation.update(deltaTime);
+  if (billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.update(deltaTime));
+  }
+
+  //Billboarding Animation
+  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.start());
+    billboardAnimationsRunning = true;
+  }
+
 
   // BILLBOARDING CONVERGE TEST
   // wait for circle animation to finish --> converge to camera position
@@ -277,6 +372,23 @@ function createSingleMaskAnimation() {
     animation.segments = steps;
     animation.currentSegment = steps[0];
     animation.start();
+  }
+}
+
+function createBillboardAnimation() {
+  for (i = 0; i < billboardAnimations.length; i++) {
+    let animation = billboardAnimations[i];
+    let steps = [];
+    steps.push({matrix: mat4.create(mat4.identity), duration: 3000});
+    steps.push({matrix: (ii => p => mat4.rotateY(mat4.create(),
+                                          mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3 * (p+1) * (1-Math.cos(p*10*Math.PI))/2.0, 0)),
+                                          glm.deg2rad(p * 360 * 10 * (ii % 3 + 1))))(i)
+                                          ,
+                                          duration: 6000 });
+    
+    steps.forEach(p => p.duration *= animationSpeedupFactor);
+    animation.segments = steps;
+    animation.currentSegment = steps[0];
   }
 }
 
