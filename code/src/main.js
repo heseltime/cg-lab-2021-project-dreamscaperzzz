@@ -12,6 +12,10 @@ var cameraAnimation = null;
 var maskFocusDuration = 1500;
 var maskLookaroundDuration = 6000;
 
+// needed for billb.
+var lastCameraPos = null;
+var mainCameraPos = vec3.fromValues(0.0, 1.0, -50.0);
+
 // scenegraph root node
 var root = null;
 
@@ -69,7 +73,7 @@ function init(resources) {
   root = createSceneGraph(gl, resources);
 
   createSingleMaskAnimation();
-  createBillboardAnimation();
+  //createBillboardAnimation(); // in render?
 }
 
 function createCameraAnimation(camera, doLooping, lastStepPos) {
@@ -341,19 +345,41 @@ function render(timeInMilliseconds) {
     camera.control.enabled = true;
   }
 
-  //TODO use your own scene for rendering
-  maskCircleAnimation.update(deltaTime);
-  singleMaskAnimation.forEach(p => p.update(deltaTime));
-  eyeAnimation.update(deltaTime);
+  // also start billboarding, once
+  if(camera.control.enabled && !billboardAnimationsRunning) {
+    createBillboardAnimation();
+    //console.log(billboardAnimations);
+    billboardAnimations.forEach(p => p.start());
+    billboardAnimationsRunning = true;
+  }
+
+  //console.log(camera.viewMatrix);
+  //console.log(cameraPos);
+
+  // running billboarding: update fn for initial animation // and special animation?
   if (billboardAnimationsRunning) {
     billboardAnimations.forEach(p => p.update(deltaTime));
   }
 
-  //Billboarding Animation
-  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+  // special animation for camera pos change
+  let currentCameraPos = camera.control.position;
+  //console.log(currentCameraPos);
+  //console.log(lastCameraPos);
+
+  if (billboardAnimationsRunning && camera.control.keysPressed.get('KeyA') || billboardAnimationsRunning && camera.control.keysPressed.get('KeyD') ) { // see framework
+    createBillboardAnimationX();
     billboardAnimations.forEach(p => p.start());
-    billboardAnimationsRunning = true;
   }
+
+  maskCircleAnimation.update(deltaTime);
+  singleMaskAnimation.forEach(p => p.update(deltaTime));
+  eyeAnimation.update(deltaTime);
+
+  // initial billboarding animation 
+  //if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+  //  billboardAnimations.forEach(p => p.start());
+  //  billboardAnimationsRunning = true;
+  //}
 
   // light updates
   light2Animation.update(deltaTime);
@@ -366,6 +392,9 @@ function render(timeInMilliseconds) {
 
   //request another call as soon as possible
   requestAnimationFrame(render);
+
+  // set lastCameraPos for comparison in next render step
+  lastCameraPos = currentCameraPos;
 }
 
 function createSingleMaskAnimation() {  
@@ -386,17 +415,50 @@ function createSingleMaskAnimation() {
   }
 }
 
+// intitial animation when rain dance is done
 function createBillboardAnimation() {
   for (i = 0; i < billboardAnimations.length; i++) {
+    // have to get pos logic from mask creator fn
+    let angle = i * 360 / maskNum;
+    //let distanceFromCenter = 15;
+    //let posArr = [distanceFromCenter*Math.sin(angle), 2, distanceFromCenter*Math.cos(angle)];
+    //let deltaArr = [posArr[0] - camera.control.position[0], camera.control.position[1] - posArr[1], camera.control.position[2] - posArr[2]];
+    //console.log(deltaArr);
     let animation = billboardAnimations[i];
     let steps = [];
-    steps.push({matrix: mat4.create(mat4.identity), duration: 1000});
-    // pause, then find matrix camera rotation and apply a derived form to mask
+    //steps.push({matrix: mat4.create(mat4.identity), duration: 1000});
+    // pause, then find matrix camera rotation and apply a derived form to mask <-- but do with angles to use animation features
+    //console.log(camera.control.lookingDir); // givs x and y, where x is horizontal, y is vertical looking, e.g. 0/0 for default direction
 
-    // calc deltas for translation
-    //let deltaX = cameraPos[0] - billboardAnimations[i].position
-    steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), [0,10,0]), duration: 2000});
-    console.log(billboardAnimations);
+    steps.push({matrix: mat4.rotateY(mat4.create(), mat4.create(), glm.deg2rad(-angle)), duration: 2000});
+
+    //steps.push({matrix: mat4.translate(mat4.create(), mat4.rotateY(mat4.create(), mat4.create(), glm.deg2rad(-180)), [0, 0, 0]), duration: 10000});
+    
+    //steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), deltaArr), duration: 10000});
+
+    animation.segments = steps;
+    animation.currentSegment = steps[0];
+  }
+}
+
+// keypress aanimations for billboarding
+function createBillboardAnimationX() {
+  for (i = 0; i < billboardAnimations.length; i++) {
+    // horizontal angle is dot from lastCameraPos and current control pos, normalized
+    //let angle = 
+    let angleBase = i * 360 / maskNum;
+
+    var normalA = vec3.normalize(vec3.fromValues(0,0,0), mainCameraPos); 
+    var normalB = vec3.normalize(vec3.fromValues(0,0,0), camera.control.position);
+    let angle = angleBase + vec3.dot(normalA, normalB);
+    console.log(angle);
+
+    let animation = billboardAnimations[i];
+    let steps = [];
+
+    steps.push({matrix: mat4.rotateY(mat4.create(), mat4.create(), angle), duration: 0});
+    console.log('rotating');
+
     animation.segments = steps;
     animation.currentSegment = steps[0];
   }
