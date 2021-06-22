@@ -4,7 +4,7 @@ var gl = null,
 
 //Camera
 var cameraAutostartEnabled = true;
-var animationSpeedupFactor = 1.0/20.0*3.0;
+var animationSpeedupFactor = 1.0/2.0*3.0;
 var camera = null;
 var cameraPos = vec3.create();
 var cameraCenter = vec3.create();
@@ -188,6 +188,27 @@ function createSceneGraph(gl, resources) {
   // add light to scenegraph
   root.append(light);
 
+  // new light == spot
+  let light2 = new LightNode();
+  light2.uniform = 'u_light2';
+  light2.angle = 120.0;
+  light2.ambient = [0, 0, 0, 1];
+  light2.diffuse = [1, 0, 0, 1];
+  light2.specular = [1, 0, 0, 1];
+  light2.position = [13, 12, 0];
+  light2.append(createLightSphere());
+  rotateLight2 = new TransformationSGNode(mat4.create(), [
+      light2
+  ]);
+  root.append(rotateLight2);
+
+  // animate light 2
+  light2Animation = new Animation(rotateLight2, [
+    { matrix: progress => mat4.rotateY(mat4.create(), mat4.translate(mat4.create(), mat4.create(), [0, 0, 0]), glm.deg2rad(-360 * progress)), duration: 3000 },
+  ],
+  true);
+  light2Animation.start();
+
   //single mask
   let maskSurface = new MaterialSGNode([
     new RenderSGNode(makeMask())
@@ -327,6 +348,8 @@ function render(timeInMilliseconds) {
     billboardAnimationsRunning = true;
   }
 
+  // light updates
+  light2Animation.update(deltaTime);
 
   // BILLBOARDING CONVERGE TEST
   // wait for circle animation to finish --> converge to camera position
@@ -835,4 +858,84 @@ function makeMask() {
     texture: texture,
     index: index
   };
+}
+
+// Classes
+
+// Custom LightNode to implement spot light, here and in phong fs
+class LightNode extends TransformationSGNode {
+
+  constructor(position, children) {
+    super(null, children);
+    this.position = position || [0, 0, 0];
+    this.ambient = [0, 0, 0, 1];
+    this.diffuse = [1, 1, 1, 1];
+    this.specular = [1, 1, 1, 1];
+    //uniform name
+    //this.uniform = 'u_light2';
+
+    this._worldPosition = null;
+
+    //spot
+    this.direction = [10, 100, 100];
+  }
+
+  setLightUniforms(context) {
+    const gl = context.gl;
+    //no materials in use
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform+'.ambient'))) {
+      return;
+    }
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.ambient'), this.ambient);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.diffuse'), this.diffuse);
+    gl.uniform4fv(gl.getUniformLocation(context.shader, this.uniform+'.specular'), this.specular);
+
+    //spot
+    gl.uniform1f(gl.getUniformLocation(context.shader, this.uniform+'Angle'), this.angle);
+  }
+
+  setLightPosition(context) {
+    const gl = context.gl;
+    if (!context.shader || !isValidUniformLocation(gl.getUniformLocation(context.shader, this.uniform+'Pos'))) {
+      return;
+    }
+    const position = this._worldPosition || this.position;
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'Pos'), position[0], position[1], position[2]);
+
+    //spot
+    const direction = this.direction;
+    gl.uniform3f(gl.getUniformLocation(context.shader, this.uniform+'Direction'), direction[0], direction[1], direction[2]);
+  }
+
+  computeLightPosition(context) {
+    //transform with the current model view matrix
+    const modelViewMatrix = mat4.multiply(mat4.create(), context.viewMatrix, context.sceneMatrix);
+    const original = this.position;
+    const position =  vec4.transformMat4(vec4.create(), vec4.fromValues(original[0], original[1],original[2], 1), modelViewMatrix);
+
+    // also direction?
+    //const originalD = this.position;
+    //const direction =  vec4.transformMat4(vec4.create(), vec4.fromValues(originalD[0], originalD[1],originalD[2], 1), modelViewMatrix);
+
+    this._worldPosition = position;
+
+  }
+
+  /**
+   * set the light uniforms without updating the last light position
+   */
+  setLight(context) {
+    this.setLightPosition(context);
+    this.setLightUniforms(context);
+  }
+
+  render(context) {
+    this.computeLightPosition(context);
+    this.setLight(context);
+
+    //since this a transformation node update the matrix according to my position
+    this.matrix = glm.translate(this.position[0], this.position[1], this.position[2]);
+    //render children
+    super.render(context);
+  }
 }
