@@ -153,7 +153,7 @@ function updateParticles(dt) {
     }
   }
   var numOfNewParticles = Math.ceil(r * random01() + 1);
-  console.log(numOfNewParticles);
+  //console.log(numOfNewParticles);
   addParticles(numOfNewParticles);
   for (i = 0; i < numOfNewParticles; i++) {
     particleRoot.append(makeParticleSGNode(particles[particles.length - i - 1]));
@@ -224,7 +224,7 @@ function createSceneGraph(gl, resources) {
   let rightEye = new TransformationSGNode(glm.transform({translate: [0.5, 1.7, -0.7]}), maskEye);
   let maskEyes = new TransformationSGNode(mat4.create(), [leftEye, rightEye]);
 
-  let fullMask = new TransformationSGNode(mat4.create(), [mainMask, maskEyes]);
+  let fullMask = new TransformationSGNode(mat4.create(), [mainMask, maskEyes]); // animate this
 
   maskSurface.ambient = [0.2, 0.2, 0.2, 1];
   maskSurface.diffuse = [0.5, 0.5, 0.5, 1];
@@ -351,12 +351,6 @@ function render(timeInMilliseconds) {
   // light updates
   light2Animation.update(deltaTime);
 
-  //Billboarding Animation
-  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
-    billboardAnimations.forEach(p => p.start());
-    billboardAnimationsRunning = true;
-  }
-
   //Apply camera
   camera.render(context);
 
@@ -390,7 +384,12 @@ function createBillboardAnimation() {
     let animation = billboardAnimations[i];
     let steps = [];
     steps.push({matrix: mat4.create(mat4.identity), duration: 1000});
-    //steps.push({matrix: p => mat4.translate(mat4.create(mat4.identity), mat4.create(mat4.identity), [10 * p, 0, 0]), duration: 1000});
+    // pause, then find matrix camera rotation and apply a derived form to mask
+
+    // calc deltas for translation
+    //let deltaX = cameraPos[0] - billboardAnimations[i].position
+    steps.push({matrix: mat4.translate(mat4.create(), mat4.create(), [0,10,0]), duration: 2000});
+    console.log(billboardAnimations);
     animation.segments = steps;
     animation.currentSegment = steps[0];
   }
@@ -755,7 +754,7 @@ function texturesArrByVList(v) {
     // still needed: 2. Hand-crafted object / b) Apply a texture to your self-created complex object by setting proper texture coordinates.
   }
 
-  console.log(textures);
+  //console.log(textures);
   return textures;
 }
 
@@ -796,7 +795,7 @@ function indexArrByVList(v) {
     }
   }
 
-  console.log(indexes);
+  //console.log(indexes);
   return indexes;
 }
 
