@@ -351,23 +351,10 @@ function render(timeInMilliseconds) {
   // light updates
   light2Animation.update(deltaTime);
 
-  // BILLBOARDING CONVERGE TEST
-  // wait for circle animation to finish --> converge to camera position
-  if (!maskCircleAnimation.running && !convergeBillboardStarted) {
-    // ANOTHER ANIMATION
-    //let maskCircleAnimationSteps2 = [
-    //  { matrix: mat4.create(), duration: 13000 },
-    //  { matrix: p => glm.transform({ translate: [0, 0.5 * Math.sin(p*40*Math.PI), 0], rotateY: 5*Math.sin(p*20*Math.PI) }), duration: 25000 }
-    //];
-    //maskCircleAnimationSteps2.forEach(p => p.duration *= animationSpeedupFactor);
-    //maskCircleAnimation = new Animation(root.maskCircleTM, maskCircleAnimationSteps2, false);
-    // --> translation to orient towards camera position: how to get? how to calculate? (1)
-    // --> ideal would be a movement that slows down based on distance, asymotically (2)
-    //maskCircleAnimation.start();
-    alert('test');
-
-    // logic
-    convergeBillboardStarted = true;
+  //Billboarding Animation
+  if (!maskCircleAnimation.running && !billboardAnimationsRunning) {
+    billboardAnimations.forEach(p => p.start());
+    billboardAnimationsRunning = true;
   }
 
   //Apply camera
@@ -402,14 +389,8 @@ function createBillboardAnimation() {
   for (i = 0; i < billboardAnimations.length; i++) {
     let animation = billboardAnimations[i];
     let steps = [];
-    steps.push({matrix: mat4.create(mat4.identity), duration: 3000});
-    steps.push({matrix: (ii => p => mat4.rotateY(mat4.create(),
-                                          mat4.translate(mat4.create(), mat4.create(), vec3.fromValues(0, 3 * (p+1) * (1-Math.cos(p*10*Math.PI))/2.0, 0)),
-                                          glm.deg2rad(p * 360 * 10 * (ii % 3 + 1))))(i)
-                                          ,
-                                          duration: 6000 });
-    
-    steps.forEach(p => p.duration *= animationSpeedupFactor);
+    steps.push({matrix: mat4.create(mat4.identity), duration: 1000});
+    //steps.push({matrix: p => mat4.translate(mat4.create(mat4.identity), mat4.create(mat4.identity), [10 * p, 0, 0]), duration: 1000});
     animation.segments = steps;
     animation.currentSegment = steps[0];
   }
