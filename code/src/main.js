@@ -246,6 +246,7 @@ function render(timeInMilliseconds) {
     // --> translation to orient towards camera position: how to get? how to calculate? (1)
     // --> ideal would be a movement that slows down based on distance, asymotically (2)
     //maskCircleAnimation.start();
+    alert('test');
 
     // logic
     convergeBillboardStarted = true;
