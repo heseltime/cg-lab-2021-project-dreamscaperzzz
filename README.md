@@ -102,7 +102,7 @@ Mention in the comments column of the table where you have implemented the code 
 | yes            | 3d | Apply Phong shading to all objects in the scene.                                                       | 4           |                 |
 | yes            | 4  | The camera is animated 30 seconds without user intervention. Animation quality and complexity of the camera and the objects influence the judgement.                                                                                                                     | 7           |                 |
 | partial        | Sx | BILLBOARDING *SPECIAL: PLEASE SEE CONCEPT*                                                             | 10          |                 |
-| yes            | Sy | PARTICLE SYSTEM                                                                                        | 30          |                 |
+| yes            | Sy | PARTICLE SYSTEM                                                                                        | 20          |                 |
 | yes            | SE | Special effects are nicely integrated and well documented                                              | 20          |                 |
 
 ### Special Effect Description
