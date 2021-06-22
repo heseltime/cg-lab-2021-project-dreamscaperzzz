@@ -18,7 +18,7 @@ Dreamscape(rzzz)
 |                  | Student ID    | First Name  | Last Name      | E-Mail                    |
 |------------------|---------------|-------------|----------------|---------------------------|
 | Gartner, Mathias | 1156113       | Mathias     | Gartner        | mathiasgartner@gmx.at     |
-| Heseltine, Jack  | 01409574      | Jack        | Heseltine      | k01409574@students.jku.at |
+| Heseltine, Jack  | 1409574       | Jack        | Heseltine      | k01409574@students.jku.at |
 
 ### Concept Submission due on 26.03.2021
 
@@ -79,8 +79,8 @@ The repository needs to contain:
 
 | Student ID     | Workload (in %) |
 | ---------------|-----------------|
-| TODO           | TODO            |
-| TODO           | TODO            |
+| 1156113        | 50              |
+| 1409574        | 50              |
 
 Workload has to sum up to 100%.
 
@@ -91,23 +91,49 @@ Mention in the comments column of the table where you have implemented the code 
 
 | Implemented    | ID | Name                                                                                                   | Max. Points | Issues/Comments |
 |----------------|----|--------------------------------------------------------------------------------------------------------|-------------|-----------------|
-| yes/no/partial | 1a | Add at least one manually composed object that consists of multiple scene graph nodes.                 | 6           |                 |
-| yes/no/partial | 1b | Animate separate parts of the composed object and also move the composed object itself in the scene.   | 4           |                 |
-| yes/no/partial | 1c | Use at least two clearly different materials for the composed object.                                  | 3           |                 |
-| yes/no/partial | 2a | Create one scene graph node that renders a complex 3D shape. Fully specify properties for this object. | 7           |                 |
-| yes/no/partial | 2b | Apply a texture to your self-created complex object by setting proper texture coordinates.             | 3           |                 |
-| yes/no/partial | 3a | Use multiple light sources.                                                                            | 5           |                 |
-| yes/no/partial | 3b | One light source should be moving in the scene.                                                        | 3           |                 |
-| yes/no/partial | 3c | Implement at least one spot-light.                                                                     | 8           |                 |
-| yes/no/partial | 3d | Apply Phong shading to all objects in the scene.                                                       | 4           |                 |
-| yes/no/partial | 4  | The camera is animated 30 seconds without user intervention. Animation quality and complexity of the camera and the objects influence the judgement.                                                                       | 7           |                 |
-| yes/no/partial | Sx | TODO Special Effect Name                                                                               | TODO        |                 |
-| yes/no/partial | Sy | TODO Special Effect Name                                                                               | TODO        |                 |
-| yes/no/partial | SE | Special effects are nicely integrated and well documented                                              | 20          |                 |
+| yes            | 1a | Add at least one manually composed object that consists of multiple scene graph nodes.                 | 6           |                 |
+| yes            | 1b | Animate separate parts of the composed object and also move the composed object itself in the scene.   | 4           |                 |
+| partial        | 1c | Use at least two clearly different materials for the composed object.                                  | 3           |                 |
+| yes            | 2a | Create one scene graph node that renders a complex 3D shape. Fully specify properties for this object. | 7           |                 |
+| no             | 2b | Apply a texture to your self-created complex object by setting proper texture coordinates.             | 3           |                 |
+| yes            | 3a | Use multiple light sources.                                                                            | 5           |                 |
+| yes            | 3b | One light source should be moving in the scene.                                                        | 3           |                 |
+| yes            | 3c | Implement at least one spot-light.                                                                     | 8           |                 |
+| yes            | 3d | Apply Phong shading to all objects in the scene.                                                       | 4           |                 |
+| yes            | 4  | The camera is animated 30 seconds without user intervention. Animation quality and complexity of the camera and the objects influence the judgement.                                                                                                                     | 7           |                 |
+| partial        | Sx | BILLBOARDING *SPECIAL: PLEASE SEE CONCEPT*                                                             | 10          |                 |
+| yes            | Sy | PARTICLE SYSTEM                                                                                        | 30          |                 |
+| yes            | SE | Special effects are nicely integrated and well documented                                              | 20          |                 |
 
 ### Special Effect Description
 
-TODO
+UNFORTUANTELY we had last minute troubles with the billboarding. Maybe you can help us with it? The specific fn is 
 
-Describe how the effects work in principle and how you implemented them. If your effect does not work but you tried to implement it, make sure that you explain this. Even if your code is broken do not delete it (e.g., keep it as a comment). If you describe the effect (how it works, and how to implement it in theory), then you will also get some points. If you remove the code and do not explain it in the README this will lead to 0 points for the effect and the integration SE.
+function createBillboardAnimationX() {
+  for (i = 0; i < billboardAnimations.length; i++) {
+    // horizontal angle is dot from lastCameraPos and current control pos, normalized
+    //let angle = 
+    let angleBase = i * 360 / maskNum;
+
+    var normalA = vec3.normalize(vec3.fromValues(0,0,0), mainCameraPos); 
+    var normalB = vec3.normalize(vec3.fromValues(0,0,0), camera.control.position);
+    let angle = angleBase + vec3.dot(normalA, normalB);
+    console.log(angle);
+
+    let animation = billboardAnimations[i];
+    let steps = [];
+
+    steps.push({matrix: mat4.rotateY(mat4.create(), mat4.create(), angle), duration: 0});
+    console.log('rotating');
+
+    animation.segments = steps;
+    animation.currentSegment = steps[0];
+  }
+}
+
+This is called from the render function after an intiital positioning. We just don't see why, when setting the duration to 0, we don't get good animation from the Y rotate framework functionality.
+
+The idea was to implement this (tied to to key strokes in render), which would be horizontal "billboarding," together with a vertical x-rotate function. The idea was to use animate function to get a kind of lag, for better effect. We show the partial implementation in the video after the 30 s camera flight --> the masks do not follow the camera, unfortunately.
+
+Thanks! J + M
 
