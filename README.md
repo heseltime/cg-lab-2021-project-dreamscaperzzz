@@ -5,7 +5,7 @@ Submission template for the CG lab project at the Johannes Kepler University Lin
 ### Explanation
 
 This `README.md` needs to be pushed to Github for each of the 3 delivery dates.
-For every submission change/extend the corresponding sections by replacing the *TODO* markers. Make sure that you push everything to your Github repository before the respective deadlines. For more details, see the Moodle page.
+For every submission change/extend the corresponding sections by replacing the *TODO* markers. Make sure that you push everything to your Github repository before the respective deadlines. For more details, see the Moodle page
 
 ## Concept submission due on 26.03.2021
 
